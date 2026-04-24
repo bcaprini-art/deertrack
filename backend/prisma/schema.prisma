@@ -1,0 +1,196 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id         String     @id @default(cuid())
+  email      String     @unique
+  name       String
+  password   String
+  createdAt  DateTime   @default(now())
+  properties Property[]
+}
+
+model Property {
+  id           String            @id @default(cuid())
+  userId       String
+  name         String
+  acreage      Float
+  state        String
+  county       String?
+  notes        String?           @db.Text
+  createdAt    DateTime          @default(now())
+  user         User              @relation(fields: [userId], references: [id])
+  zones        Zone[]
+  cameras      Camera[]
+  bucks        Buck[]
+  improvements LandImprovement[]
+  harvests     Harvest[]
+  sightings    Sighting[]
+  soilTests    SoilTest[]
+}
+
+model Zone {
+  id           String            @id @default(cuid())
+  propertyId   String
+  name         String
+  type         ZoneType
+  acreage      Float?
+  notes        String?
+  lat          Float?
+  lng          Float?
+  property     Property          @relation(fields: [propertyId], references: [id])
+  cameras      Camera[]
+  sightings    Sighting[]
+  improvements LandImprovement[]
+  soilTests    SoilTest[]
+}
+
+enum ZoneType {
+  FOOD_PLOT
+  BEDDING
+  WATER
+  TRAVEL_CORRIDOR
+  TIMBER
+  OPEN_FIELD
+  STAND_LOCATION
+  OTHER
+}
+
+model Camera {
+  id          String     @id @default(cuid())
+  propertyId  String
+  zoneId      String?
+  name        String
+  lat         Float?
+  lng         Float?
+  active      Boolean    @default(true)
+  installedAt DateTime?
+  notes       String?
+  property    Property   @relation(fields: [propertyId], references: [id])
+  zone        Zone?      @relation(fields: [zoneId], references: [id])
+  sightings   Sighting[]
+}
+
+model Sighting {
+  id            String         @id @default(cuid())
+  propertyId    String
+  cameraId      String?
+  zoneId        String?
+  date          DateTime
+  type          DeerType
+  count         Int            @default(1)
+  buckId        String?
+  antlerClass   AntlerClass?
+  bodyCondition BodyCondition?
+  notes         String?
+  photoUrl      String?
+  property      Property       @relation(fields: [propertyId], references: [id])
+  camera        Camera?        @relation(fields: [cameraId], references: [id])
+  zone          Zone?          @relation(fields: [zoneId], references: [id])
+  buck          Buck?          @relation(fields: [buckId], references: [id])
+}
+
+enum DeerType {
+  BUCK
+  DOE
+  FAWN
+  UNKNOWN
+}
+
+enum AntlerClass {
+  SPIKE
+  FORK
+  BASKET
+  MEDIUM
+  SHOOTER
+  MATURE
+  GIANT
+}
+
+enum BodyCondition {
+  POOR
+  FAIR
+  GOOD
+  EXCELLENT
+}
+
+model Buck {
+  id            String     @id @default(cuid())
+  propertyId    String
+  name          String
+  firstSeenYear Int
+  estimatedAge  Int?
+  notes         String?
+  photoUrl      String?
+  harvested     Boolean    @default(false)
+  harvestedAt   DateTime?
+  property      Property   @relation(fields: [propertyId], references: [id])
+  sightings     Sighting[]
+  harvests      Harvest[]
+}
+
+model LandImprovement {
+  id          String          @id @default(cuid())
+  propertyId  String
+  zoneId      String?
+  type        ImprovementType
+  description String
+  date        DateTime
+  acreage     Float?
+  species     String?
+  cost        Float?
+  notes       String?
+  property    Property        @relation(fields: [propertyId], references: [id])
+  zone        Zone?           @relation(fields: [zoneId], references: [id])
+}
+
+enum ImprovementType {
+  FOOD_PLOT_PLANT
+  FOOD_PLOT_MAINTAIN
+  WATER_SOURCE
+  TIMBER_WORK
+  BRUSH_CLEARING
+  BEDDING_CREATE
+  TRAIL_WORK
+  FERTILIZE
+  LIME
+  HERBICIDE
+  OTHER
+}
+
+model SoilTest {
+  id         String    @id @default(cuid())
+  propertyId String
+  zoneId     String?
+  date       DateTime
+  ph         Float?
+  nitrogen   Float?
+  phosphorus Float?
+  potassium  Float?
+  notes      String?
+  property   Property  @relation(fields: [propertyId], references: [id])
+  zone       Zone?     @relation(fields: [zoneId], references: [id])
+}
+
+model Harvest {
+  id          String    @id @default(cuid())
+  propertyId  String
+  buckId      String?
+  zoneId      String?
+  date        DateTime
+  type        DeerType
+  weight      Float?
+  ageEstimate Int?
+  mainBeams   Float?
+  spread      Float?
+  points      Int?
+  notes       String?
+  property    Property  @relation(fields: [propertyId], references: [id])
+  buck        Buck?     @relation(fields: [buckId], references: [id])
+}
